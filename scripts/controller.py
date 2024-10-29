@@ -10,12 +10,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.linalg as la
-import pathlib
-from utils.angle import angle_mod
-import rclpy
-sys.path.append(str(pathlib.Path(__file__).parent.parent.parent))
-
-from PathPlanning.CubicSpline import cubic_spline_planner
+import cubic_spline_planner
 
 # === Parameters =====
 
@@ -26,7 +21,75 @@ dt = 0.1  # time tick[s]
 L = 0.5  # Wheel base of the vehicle [m]
 max_steer = np.deg2rad(45.0)  # maximum steering angle[rad]
 
+lqr_Q[0, 0] = 0.1
+lqr_Q[1, 1] = 0.01
+lqr_Q[2, 2] = 0.1
+lqr_Q[3, 3] = 0.01
+lqr_Q[4, 4] = 1.0
+
+lqr_R[0, 0] = 30.0
+lqr_R[1, 1] = 30.0
+
 show_animation = True
+
+def angle_mod(x, zero_2_2pi=False, degree=False):
+    """
+    Angle modulo operation
+    Default angle modulo range is [-pi, pi)
+
+    Parameters
+    ----------
+    x : float or array_like
+        A angle or an array of angles. This array is flattened for
+        the calculation. When an angle is provided, a float angle is returned.
+    zero_2_2pi : bool, optional
+        Change angle modulo range to [0, 2pi)
+        Default is False.
+    degree : bool, optional
+        If True, then the given angles are assumed to be in degrees.
+        Default is False.
+
+    Returns
+    -------
+    ret : float or ndarray
+        an angle or an array of modulated angle.
+
+    Examples
+    --------
+    >>> angle_mod(-4.0)
+    2.28318531
+
+    >>> angle_mod([-4.0])
+    np.array(2.28318531)
+
+    >>> angle_mod([-150.0, 190.0, 350], degree=True)
+    array([-150., -170.,  -10.])
+
+    >>> angle_mod(-60.0, zero_2_2pi=True, degree=True)
+    array([300.])
+
+    """
+    if isinstance(x, float):
+        is_float = True
+    else:
+        is_float = False
+
+    x = np.asarray(x).flatten()
+    if degree:
+        x = np.deg2rad(x)
+
+    if zero_2_2pi:
+        mod_angle = x % (2 * np.pi)
+    else:
+        mod_angle = (x + np.pi) % (2 * np.pi) - np.pi
+
+    if degree:
+        mod_angle = np.rad2deg(mod_angle)
+
+    if is_float:
+        return mod_angle.item()
+    else:
+        return mod_angle
 
 
 class State:
@@ -150,7 +213,7 @@ def lqr_speed_steering_control(state, cx, cy, cyaw, ck, pe, pth_e, sp, Q, R):
     # calc steering input
     ff = math.atan2(L * k, 1)  # feedforward steering angle
     fb = pi_2_pi(ustar[0, 0])  # feedback steering angle
-    delta = ff + fb
+    delta = fb
 
     # calc accel input
     accel = ustar[1, 0]
@@ -182,7 +245,7 @@ def calc_nearest_index(state, cx, cy, cyaw):
 
 def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
     T = 500.0  # max simulation time
-    goal_dis = 0.3
+    goal_dis = 3.0
     stop_speed = 0.05
 
     state = State(x=-0.0, y=-0.0, yaw=0.0, v=0.0)
@@ -193,6 +256,9 @@ def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
     yaw = [state.yaw]
     v = [state.v]
     t = [0.0]
+    delta = [0.0]
+    acell = [0.0]
+    errror_history = [0.0]
 
     e, e_th = 0.0, 0.0
 
@@ -219,6 +285,9 @@ def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
         yaw.append(state.yaw)
         v.append(state.v)
         t.append(time)
+        delta.append(dl)
+        acell.append(ai)
+        errror_history.append(e)
 
         if target_ind % 1 == 0 and show_animation:
             plt.cla()
@@ -235,7 +304,7 @@ def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
                       + ",target index:" + str(target_ind))
             plt.pause(0.0001)
 
-    return t, x, y, yaw, v
+    return t, x, y, yaw, v, delta, acell, errror_history
 
 
 def calc_speed_profile(cyaw, target_speed):
@@ -270,8 +339,8 @@ def calc_speed_profile(cyaw, target_speed):
 
 def main():
     print("LQR steering control tracking start!!")
-    ax = [0.0, 6.0, 12.5, 10.0, 17.5, 20.0, 25.0]
-    ay = [0.0, -3.0, -5.0, 6.5, 3.0, 0.0, 0.0]
+    ax = [0.0, 20.0, 40.0, 80.0, 100.0, 80.0, 60.0]
+    ay = [0.0, 0.0, 20.0, 20.0, 40.0, 60.0, 60.0]
     goal = [ax[-1], ay[-1]]
 
     cx, cy, cyaw, ck, s = cubic_spline_planner.calc_spline_course(
@@ -280,7 +349,7 @@ def main():
 
     sp = calc_speed_profile(cyaw, target_speed)
 
-    t, x, y, yaw, v = do_simulation(cx, cy, cyaw, ck, sp, goal)
+    t, x, y, yaw, v, delta, acell, error_history = do_simulation(cx, cy, cyaw, ck, sp, goal)
 
     if show_animation:  # pragma: no cover
         plt.close()
@@ -314,6 +383,27 @@ def main():
         plt.legend()
         plt.xlabel("line length[m]")
         plt.ylabel("curvature [1/m]")
+
+        plt.subplots(1)
+        plt.plot(t, np.rad2deg(np.array(delta)), "-r", label="steering angle")
+        plt.grid(True)
+        plt.legend()
+        plt.xlabel("Time [sec]")
+        plt.ylabel("Steering angle[deg]")
+
+        plt.subplots(1)
+        plt.plot(t, acell, "-r", label="acceleration")
+        plt.grid(True)
+        plt.legend()
+        plt.xlabel("Time [sec]")
+        plt.ylabel("acceleration[m/ss]")
+
+        plt.subplots(1)
+        plt.plot(t, error_history, "-r", label="lateral error")
+        plt.grid(True)
+        plt.legend()    
+        plt.xlabel("Time [sec]")
+        plt.ylabel("lateral error[m]")
 
         plt.show()
 

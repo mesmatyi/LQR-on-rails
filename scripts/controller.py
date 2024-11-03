@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.linalg as la
 import cubic_spline_planner
+import time
 
 # === Parameters =====
 
@@ -21,11 +22,11 @@ dt = 0.1  # time tick[s]
 L = 0.5  # Wheel base of the vehicle [m]
 max_steer = np.deg2rad(45.0)  # maximum steering angle[rad]
 
-lqr_Q[0, 0] = 0.1
-lqr_Q[1, 1] = 0.01
-lqr_Q[2, 2] = 0.1
-lqr_Q[3, 3] = 0.01
-lqr_Q[4, 4] = 1.0
+lqr_Q[0, 0] = 1.0
+lqr_Q[1, 1] = 0.1
+lqr_Q[2, 2] = 1.0
+lqr_Q[3, 3] = 0.1
+lqr_Q[4, 4] = 0.6
 
 lqr_R[0, 0] = 30.0
 lqr_R[1, 1] = 30.0
@@ -213,7 +214,7 @@ def lqr_speed_steering_control(state, cx, cy, cyaw, ck, pe, pth_e, sp, Q, R):
     # calc steering input
     ff = math.atan2(L * k, 1)  # feedforward steering angle
     fb = pi_2_pi(ustar[0, 0])  # feedback steering angle
-    delta = fb
+    delta = ff + fb
 
     # calc accel input
     accel = ustar[1, 0]
@@ -240,7 +241,12 @@ def calc_nearest_index(state, cx, cy, cyaw):
     if angle < 0:
         mind *= -1
 
-    return ind, mind
+    # Project RMS error onto vehicle
+    vehicle_vector = [-np.cos(state.yaw + np.pi / 2),
+                      -np.sin(state.yaw + np.pi / 2)]
+    lateral_error_from_vehicle = np.dot([dx[ind], dy[ind]], vehicle_vector)
+
+    return ind, -lateral_error_from_vehicle
 
 
 def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
@@ -343,9 +349,12 @@ def main():
     ay = [0.0, 0.0, 20.0, 20.0, 40.0, 60.0, 60.0]
     goal = [ax[-1], ay[-1]]
 
+    # time the following function call
+
     cx, cy, cyaw, ck, s = cubic_spline_planner.calc_spline_course(
         ax, ay, ds=0.1)
     target_speed = 10.0 / 3.6  # simulation parameter km/h -> m/s
+
 
     sp = calc_speed_profile(cyaw, target_speed)
 

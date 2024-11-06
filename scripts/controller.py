@@ -22,10 +22,10 @@ dt = 0.1  # time tick[s]
 L = 0.5  # Wheel base of the vehicle [m]
 max_steer = np.deg2rad(45.0)  # maximum steering angle[rad]
 
-lqr_Q[0, 0] = 0.01
-lqr_Q[1, 1] = 0.001
-lqr_Q[2, 2] = 0.01
-lqr_Q[3, 3] = 0.001
+lqr_Q[0, 0] = 0.1
+lqr_Q[1, 1] = 0.1
+lqr_Q[2, 2] = 0.1
+lqr_Q[3, 3] = 0.1
 lqr_Q[4, 4] = 0.6
 
 lqr_R[0, 0] = 30.0

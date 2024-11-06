@@ -93,11 +93,10 @@ class ROSController(Node):
 
         self.state = State(x=0.0, y=0.0, yaw=0.0, v=0.0, steer=0.0)
 
-        self.generate_trajectory()
 
         self.ctrl_publisher = self.create_publisher(Control, '/control/command/contol_cmd', 10)
-        self.traj_subscriber = self.create_subscription(Trajectory, '/plan/trajetory', 10)
-        self.ego_subscriber = self.create_subscription(Ego, '/ego', 10)
+        self.traj_subscriber = self.create_subscription(Trajectory, '/plan/trajetory', self.recive_trajectory, 10)
+        self.ego_subscriber = self.create_subscription(Ego, '/ego', self.recive_ego, 10)
 
         self.control_clock = self.create_timer(0.05, self.control_loop)
 
@@ -109,10 +108,7 @@ class ROSController(Node):
             self.cy.append(msg.points[i].pose.position.y)
             self.cyaw.append(msg.points[i].pose.orientation.z)
             self.sp.append(msg.points[i].longitudinal_velocity_mps)
-
-        self.cx, self.cy, self.cyaw, self.ck, self.s = cubic_spline_planner.calc_spline_course(
-            self.cx[-1], self.cy[-1], ds=0.1)
-        target_speed = 10.0 / 3.6  # simulation parameter km/h -> m/s
+            self.ck.append(msg.points[i].heading_rate_rps)
 
 
     def recive_ego(self, msg):
@@ -120,7 +116,7 @@ class ROSController(Node):
         self.state.y = msg.pose.pose.position.y
         self.state.yaw = msg.pose.pose.orientation.z
         self.state.v = msg.twist.twist.linear.x
-        self.state.steer = msg.lateral.steering_tire_angle
+        self.state.steer = msg.tire_angle_front
 
     def solve_dare(self, A, B, Q, R):
         """
@@ -160,6 +156,17 @@ class ROSController(Node):
 
 
     def control_loop(self):
+
+        Control_msg = Control()
+        Control_msg.stamp = self.get_clock().now().to_msg()
+        Control_msg.longitudinal.acceleration = 0.0
+        Control_msg.lateral.steering_tire_angle = 0.0
+
+        if len(self.cx) <= 0:
+            self.ctrl_publisher.publish(Control_msg)
+            return
+
+
         ind, e = self.calc_nearest_index(self.state, self.cx, self.cy, self.cyaw)
 
         tv = self.sp[ind]
@@ -190,7 +197,7 @@ class ROSController(Node):
         B[3, 0] = v / L
         B[4, 1] = dt
 
-        K, _, _ = self.dlqr(A, B, Q, R)
+        K, _, _ = self.dlqr(A, B, lqr_Q, lqr_R)
 
         # state vector
         # x = [e, dot_e, th_e, dot_th_e, delta_v]
@@ -221,11 +228,10 @@ class ROSController(Node):
         accel = ustar[1, 0]
 
 
-        Control_msg = Control()
-        Control_msg.header.stamp = self.get_clock().now().to_msg()
-        Control_msg.header.frame_id = 'base_link'
         Control_msg.longitudinal.acceleration = accel
         Control_msg.lateral.steering_tire_angle = delta
+
+        print("Control command:" + str(accel) + " " + str(delta))
 
         self.ctrl_publisher.publish(Control_msg)
 

@@ -167,7 +167,6 @@ class ROSMiniSim(Node):
         return speed_profile
 
     def send_trajectory(self):
-
         
         traj = Trajectory()
         traj.header.stamp = self.get_clock().now().to_msg()
@@ -180,6 +179,7 @@ class ROSMiniSim(Node):
             point.pose.position.y = self.cy[i]
             point.pose.orientation.z = self.cyaw[i]
             point.longitudinal_velocity_mps = self.sp[i]
+            point.heading_rate_rps = self.ck[i]
 
             traj.points.append(point)
 
@@ -199,7 +199,7 @@ class ROSMiniSim(Node):
         self.ego_publisher.publish(ego)
 
 
-    def update(state, msg):
+    def update(self, msg):
 
         a = msg.longitudinal.acceleration
 
@@ -210,13 +210,23 @@ class ROSMiniSim(Node):
         if delta <= - max_steer:
             delta = - max_steer
 
-        state.x = state.x + state.v * math.cos(state.yaw) * dt
-        state.y = state.y + state.v * math.sin(state.yaw) * dt
-        state.yaw = state.yaw + state.v / L * math.tan(delta) * dt
-        state.v = state.v + a * dt
-        state.steer = delta
+        self.state.x = self.state.x + self.state.v * math.cos(self.state.yaw) * dt
+        self.state.y = self.state.y + self.state.v * math.sin(self.state.yaw) * dt
+        self.state.yaw = self.state.yaw + self.state.v / L * math.tan(delta) * dt
+        self.state.v = self.state.v + a * dt
+        self.state.steer = delta
 
-        return state
+        plt.cla()
+        # for stopping simulation with the esc key.
+        plt.gcf().canvas.mpl_connect(
+            'key_release_event',
+            lambda event: [exit(0) if event.key == 'escape' else None])
+        plt.plot(self.cx, self.cy, "-r", label="course")
+        plt.plot(self.state.x, self.state.y, "ob", label="trajectory")
+        plt.axis("equal")
+        plt.grid(True)
+        plt.pause(0.0001)
+
 
 def main(args=None):
     rclpy.init(args=args)

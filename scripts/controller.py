@@ -19,17 +19,17 @@ import time
 lqr_Q = np.eye(5)
 lqr_R = np.eye(2)
 dt = 0.1  # time tick[s]
-L = 0.5  # Wheel base of the vehicle [m]
-max_steer = np.deg2rad(45.0)  # maximum steering angle[rad]
+L = 2.9  # Wheel base of the vehicle [m]
+max_steer = np.deg2rad(25.0)  # maximum steering angle[rad]
 
 lqr_Q[0, 0] = 0.1
-lqr_Q[1, 1] = 0.1
+lqr_Q[1, 1] = 0.01
 lqr_Q[2, 2] = 0.1
-lqr_Q[3, 3] = 0.1
+lqr_Q[3, 3] = 0.01
 lqr_Q[4, 4] = 0.6
 
-lqr_R[0, 0] = 30.0
-lqr_R[1, 1] = 30.0
+lqr_R[0, 0] = 15.0
+lqr_R[1, 1] = 15.0
 
 show_animation = True
 
@@ -117,6 +117,10 @@ def update(state, a, delta):
     return state
 
 
+def calculate_lateral_acceleration(v, delta, L):
+    return (v ** 2 / L) * math.tan(delta)
+
+
 def pi_2_pi(angle):
     return angle_mod(angle)
 
@@ -158,7 +162,8 @@ def dlqr(A, B, Q, R):
     return K, X, eig_result[0]
 
 
-def lqr_speed_steering_control(state, cx, cy, cyaw, ck, pe, pth_e, sp, Q, R):
+
+def lqr_speed_steering_control(state, cx, cy, cyaw, ck, pe, pth_e,jerk_factor, sp, Q, R):
     ind, e = calc_nearest_index(state, cx, cy, cyaw)
 
     tv = sp[ind]
@@ -200,7 +205,7 @@ def lqr_speed_steering_control(state, cx, cy, cyaw, ck, pe, pth_e, sp, Q, R):
     # delta_v: difference between current speed and target speed
     x = np.zeros((5, 1))
     x[0, 0] = e
-    x[1, 0] = (e - pe) / dt
+    x[1, 0] = 0
     x[2, 0] = th_e
     x[3, 0] = (th_e - pth_e) / dt
     x[4, 0] = v - tv
@@ -214,7 +219,7 @@ def lqr_speed_steering_control(state, cx, cy, cyaw, ck, pe, pth_e, sp, Q, R):
     # calc steering input
     ff = math.atan2(L * k, 1)  # feedforward steering angle
     fb = pi_2_pi(ustar[0, 0])  # feedback steering angle
-    delta = ff + fb
+    delta = fb + ff
 
     # calc accel input
     accel = ustar[1, 0]
@@ -265,14 +270,27 @@ def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
     delta = [0.0]
     acell = [0.0]
     errror_history = [0.0]
+    jerk_history = [0.0]
+    lateral_acceleration = 0.0
+    prev_lat_acc = 0.0
+    dl = 0.0
 
     e, e_th = 0.0, 0.0
 
+
     while T >= time:
+
+        lateral_acceleration = calculate_lateral_acceleration(state.v, dl, L)
+        jerk_factor = (lateral_acceleration - prev_lat_acc) / dt
+
         dl, target_ind, e, e_th, ai = lqr_speed_steering_control(
-            state, cx, cy, cyaw, ck, e, e_th, speed_profile, lqr_Q, lqr_R)
+            state, cx, cy, cyaw, ck, e, e_th, jerk_factor, speed_profile, lqr_Q, lqr_R)
+        
+        
+        prev_lat_acc = lateral_acceleration
 
         state = update(state, ai, dl)
+
 
         if abs(state.v) <= stop_speed:
             target_ind += 1
@@ -294,6 +312,7 @@ def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
         delta.append(dl)
         acell.append(ai)
         errror_history.append(e)
+        jerk_history.append(jerk_factor)
 
         if target_ind % 1 == 0 and show_animation:
             plt.cla()
@@ -310,7 +329,7 @@ def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
                       + ",target index:" + str(target_ind))
             plt.pause(0.0001)
 
-    return t, x, y, yaw, v, delta, acell, errror_history
+    return t, x, y, yaw, v, delta, acell, errror_history, jerk_history
 
 
 def calc_speed_profile(cyaw, target_speed):
@@ -345,20 +364,23 @@ def calc_speed_profile(cyaw, target_speed):
 
 def main():
     print("LQR steering control tracking start!!")
-    ax = [0.0, 20.0, 40.0, 80.0, 100.0, 80.0, 60.0]
-    ay = [0.0, 0.0, 20.0, 20.0, 40.0, 60.0, 60.0]
+    ax = [0.0, 20.0, 40.0,  60.0, 120.0, 180.0, 280.0, 320.0, 340.0, 380.0, 400.0]
+    ay = [0.0, 0.0, 25.0, 30.0, 40.0, 50.0, 60.0, 70.0, 150.0, 160.0, 180.0]
+
+
+
     goal = [ax[-1], ay[-1]]
 
     # time the following function call
 
     cx, cy, cyaw, ck, s = cubic_spline_planner.calc_spline_course(
         ax, ay, ds=0.1)
-    target_speed = 10.0 / 3.6  # simulation parameter km/h -> m/s
+    target_speed = 50.0 / 3.6  # simulation parameter km/h -> m/s
 
 
     sp = calc_speed_profile(cyaw, target_speed)
 
-    t, x, y, yaw, v, delta, acell, error_history = do_simulation(cx, cy, cyaw, ck, sp, goal)
+    t, x, y, yaw, v, delta, acell, error_history,jerk_history = do_simulation(cx, cy, cyaw, ck, sp, goal)
 
     if show_animation:  # pragma: no cover
         plt.close()
@@ -413,6 +435,13 @@ def main():
         plt.legend()    
         plt.xlabel("Time [sec]")
         plt.ylabel("lateral error[m]")
+
+        plt.subplots(1)
+        plt.plot(t, np.array(jerk_history), "-r", label="Jerk over time")
+        plt.grid(True)
+        plt.legend()
+        plt.xlabel("Time [sec]")
+        plt.ylabel("Jerk [m/s^3]")
 
         plt.show()
 

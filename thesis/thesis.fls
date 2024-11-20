@@ -1026,7 +1026,6 @@ INPUT ./include/project.tex
 INPUT include/project.tex
 INPUT /usr/share/texmf/fonts/tfm/public/lm/ec-lmr12.tfm
 INPUT /usr/share/texmf/fonts/tfm/public/lm/ec-lmbx12.tfm
-INPUT /usr/share/texmf/fonts/tfm/public/lm/ec-lmri10.tfm
 INPUT ./include/declaration.tex
 INPUT ./include/declaration.tex
 INPUT ./include/declaration.tex
@@ -1038,6 +1037,7 @@ INPUT include/declaration.tex
 INPUT ./include/declaration.tex
 INPUT include/declaration.tex
 INPUT /usr/share/texmf/fonts/tfm/public/lm/ec-lmbx10.tfm
+INPUT /usr/share/texmf/fonts/tfm/public/lm/ec-lmri10.tfm
 INPUT ./content/abstract.tex
 INPUT ./content/abstract.tex
 INPUT ./content/abstract.tex

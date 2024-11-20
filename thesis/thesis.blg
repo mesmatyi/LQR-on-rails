@@ -1,0 +1,74 @@
+This is BibTeX, Version 0.99d (TeX Live 2022/dev/Debian)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: thesis.aux
+The style file: huplain.bst
+A level-1 auxiliary file: include/outercover.aux
+A level-1 auxiliary file: include/titlepage.aux
+A level-1 auxiliary file: include/project.aux
+A level-1 auxiliary file: include/declaration.aux
+A level-1 auxiliary file: content/abstract.aux
+A level-1 auxiliary file: content/introduction.aux
+A level-1 auxiliary file: content/thesis-format.aux
+A level-1 auxiliary file: content/latex-tools.aux
+A level-1 auxiliary file: content/template-usage.aux
+A level-1 auxiliary file: content/acknowledgement.aux
+A level-1 auxiliary file: content/appendices.aux
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
+Reallocated global_strs (elt_size=200001) to 20 items from 10.
+Reallocated glb_str_end (elt_size=4) to 20 items from 10.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Database file #1: bib/mybib.bib
+Warning--entry type for "KissPhD" isn't style-file defined
+--line 31 of file bib/mybib.bib
+Warning--entry type for "Jeney" isn't style-file defined
+--line 70 of file bib/mybib.bib
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Warning--empty journal in Candy86
+You've used 8 entries,
+            4991 wiz_defined-function locations,
+            1189 strings with 13076 characters,
+and the built_in function-call counts, 22786 in all, are:
+= -- 4281
+> -- 123
+< -- 5
++ -- 1668
+- -- 95
+* -- 337
+:= -- 774
+add.period$ -- 28
+call.type$ -- 8
+change.case$ -- 33
+chr.to.int$ -- 0
+cite$ -- 9
+duplicate$ -- 3656
+empty$ -- 406
+format.name$ -- 28
+if$ -- 4781
+int.to.chr$ -- 0
+int.to.str$ -- 8
+missing$ -- 8
+newline$ -- 143
+num.names$ -- 18
+pop$ -- 745
+preamble$ -- 1
+purify$ -- 27
+quote$ -- 22
+skip$ -- 168
+stack$ -- 0
+substring$ -- 2562
+swap$ -- 2507
+text.length$ -- 5
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 40
+warning$ -- 1
+while$ -- 103
+width$ -- 9
+write$ -- 187
+(There were 3 warnings)

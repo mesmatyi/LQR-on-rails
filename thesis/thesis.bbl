@@ -1,0 +1,148 @@
+\makeatletter \ifx\bibEarlyBegin\hfuzz
+  \def\bibEarlyBegin{\begingroup\everypar{}\sloppy\hbadness10000
+    \def\Hy@colorlink##1{\begingroup}
+    \def\Hy@endcolorlink{\endgroup}
+    \def\@inpenc@loop##1##2{}
+    \def\thebibliography##1{}
+    \def\endthebibliography{\skip@egroup\aftergroup\bibEarlyEnd}%
+    \def\inputencoding##1{}\c@enumi\z@
+    \def\bibitem{\skip@egroup \let\skip@egroup\egroup
+      \advance\c@enumi\@ne\@ifnextchar[\@lbibitem\@bibitem}%
+    \def\@lbibitem[##1]##2{\bibcite{##2}{##1}%
+      \setbox0\vbox\bgroup}% avoid emitting boxes
+    \def\@bibitem##1{\expandafter\skip@bibcite\expandafter
+      {\the\c@enumi}{##1}\setbox0\vbox\bgroup}% avoid emitting boxes
+    \def\skip@bibcite##1##2{\bibcite{##2}{##1}}%
+    \catcode11=9 % ignored
+    \@tempcnta  1 \loop\catcode\@tempcnta=9
+      \ifnum\@tempcnta<  8 \advance\@tempcnta\@ne\repeat
+    \@tempcnta 14 \loop\catcode\@tempcnta=9
+      \ifnum\@tempcnta< 31 \advance\@tempcnta\@ne\repeat
+    \@tempcnta127 \loop\catcode\@tempcnta=9
+      \ifnum\@tempcnta<255 \advance\@tempcnta\@ne\repeat
+    \let\skip@egroup\relax}
+  \def\bibEarlyEnd{\endgroup \let\bibcite\@gobbletwo
+    \global\let\bibEarlyRead\relax}
+  \bibEarlyBegin
+\else \let\bibEarlyEnd\relax \fi
+
+\begin{thebibliography}{1}
+\frenchspacing
+\makeatletter
+\global\def\bibIE@lowc{%
+  \expandafter\ifx\csname inputencoding\endcsname\relax
+    \def\NeedsTeXFormat##1]{}%
+    \def\ProvidesPackage##1]{}%
+    \def\DeclareOption##1##2{}%
+    \def\ProcessOptions{\@ifstar\@gobble\@empty}%
+    \input inputenc.sty
+    \let\NeedsTeXFormat \@notprerr
+    \let\ProvidesPackage\@notprerr
+    \let\DeclareOption  \@notprerr
+    \let\ProcessOptions \@notprerr
+  \fi
+  \global\let\bibIE@lowc\relax}
+\def\bibIE@lowa#1#2{%
+  \global\def\bibResetInputEncoding{\bibIE@lowb{ascii}}% anti-warning
+  \ifx#1\relax\else
+  \ifx#1\@inpenc@undefined@\@empty
+    \global\def\bibResetInputEncoding{\bibIE@lowb{#2}}%
+    \ifx\bibResetInputEncoding\reserved@a% keep old encoding
+      \global\let\bibResetInputEncoding\@empty \let\reserved@a\@empty \fi
+  \fi\fi}
+\let\bibIE@input\input
+\def\bibIE@ascii{ascii}
+\def\bibIE@lowb#1{%
+  \def\reserved@a{#1}\ifx\reserved@a\bibIE@ascii
+    \gdef\@inpenc@test{\global\let\@inpenc@test\relax}%
+    \edef\@inpenc@undefined{\noexpand\@inpenc@undefined@{ascii}}%
+    \@inpenc@loop\^^A\^^H\@inpenc@loop\^^K\^^K%
+    \@inpenc@loop\^^N\^^_\@inpenc@loop\^^?\^^ff%
+\else\def\input{\global\let\@inpenc@test\relax \bibIE@input}% no {ascii} warn
+  \inputencoding{#1}\fi}%
+\def\bibInputEncoding#1{%
+  \bibIE@lowc
+  \def\reserved@a{\bibIE@lowb{#1}}%
+  % vvv \@inpenc@undefined -> `\@inpenc@undefined@{latin2}' or undefined
+  \expandafter\expandafter\expandafter\bibIE@lowa\csname
+    @inpenc@undefined\endcsname\relax
+  \reserved@a}
+
+\def\leftflushbreak{\ifx\\\@centercr\penalty100 \else
+  \unpenalty\unpenalty{\@tempdima\lastskip\unskip\nobreak
+  \hskip\@tempdima plus1fil}\null\penalty100 \hskip0pt plus-1fil\relax\fi}
+\begingroup\lccode\string`~=\string`\^^M
+  \lowercase{\endgroup\def\verb@eol@error{\obeylines\def~{\bibVerbNoSp}}}
+\begingroup\lccode\string`~=\string`\ \relax
+  \lowercase{\endgroup\def\bibVerbNoSp#1{\ifx#1~\expandafter\bibVerbNoSp
+  \else\expandafter#1\fi}}
+\expandafter\ifx\csname bibUrll\endcsname\relax
+\expandafter\ifx\csname url\endcsname\relax
+     \def\bibUrll#1>{\leavevmode\leftflushbreak #1~\verb>}
+\else\def\bibUrll#1>{\leavevmode\leftflushbreak#1~\begingroup
+       \catcode\string`\%=12 \catcode\string`\#=12 \bibUrlll}
+     \def\bibUrlll#1>{\url{#1}\endgroup}\fi
+\fi
+\def\bibHU@mix#1{\egroup#1}
+\def\bibAnd#1{\nobreak\,\nobreak\hbox{--}\,}
+\def\bibEtAl#1{ \'es m\'asok}
+\def\bibEd#1{ (szerk.)}
+\def\bibNewBlock{\unskip\space}
+\def\bibVolume#1#2{#1 k\"ot.} \let\bibNumVolumes\bibVolume
+\def\bibTechRep#1{Jelent\'{e}s}
+\def\bibInSelf#1{In u\H{o}: }
+\csname bibOverride\endcsname
+
+\bibitem{DipPortal}
+{Budapesti Műszaki és Gazdaságtudományi Egyetem Villamosmérnöki és
+  Informatikai Kar}:
+\bibNewBlock Diplomaterv portál (2011. február 26.).
+\bibNewBlock \url{http://diplomaterv.vik.bme.hu/}.
+
+\bibitem{Candy86}
+James~C. Candy:
+\bibNewBlock Decimation for sigma delta modulation.
+\bibNewBlock 34. \'evf. (1986.\ 01) 1. sz., 72--76.~p.
+\bibNewBlock \doi{10.1109/TCOM.1986.1096432}.
+
+\bibitem{Jeney}
+Gábor Jeney:
+\bibNewBlock Hogyan néz ki egy igényes dokumentum? {N}éhány szóban az
+  alapvető tipográfiai szabályokról, 2014.
+\bibNewBlock \url{http://www.mcl.hu/~jeneyg/kinezet.pdf}.
+
+\bibitem{KissPhD}
+Peter Kiss:
+\bibNewBlock Adaptive digital compensation of analog circuit imperfections for
+  cascaded delta-sigma analog-to-digital converters, 2000.\ 04.
+
+\bibitem{Lee87}
+Wai~L. Lee\bibAnd 1Charles~G. Sodini:
+\bibNewBlock A topology for higher order interpolative coders.
+\bibNewBlock In {\em Proc.\ of the IEEE International Symposium on Circuits and
+  Systems} (kon\-fe\-ren\-cia\-anyag).
+\bibNewBlock 1987.\ 4-7~05., 459--462.~p.
+
+\bibitem{Mkrtychev:1997}
+Alexey Mkrtychev:
+\bibNewBlock Models for the logic of proofs.
+\bibNewBlock In Sergei Adian\bibAnd 1Anil Nerode\bibEd 1: {\em Logical
+  Foundations of Computer Science}.
+\bibNewBlock Lecture Notes in Computer Science sorozat, \bibVolume {1234.}.
+\bibNewBlock 1997, Springer Berlin Heidelberg, 266--275.~p.
+\bibNewBlock ISBN 978-3-540-63045-6.
+\bibNewBlock
+\bibUrll{URL} >http://dx.doi.org/10.1007/3-540-63045-7_27>.
+
+\bibitem{Schreier00}
+Richard Schreier:
+\bibNewBlock {\em The Delta-Sigma Toolbox v5.2}.
+\bibNewBlock Oregon State University, 2000.\ 01.
+\bibNewBlock \url{http://www.mathworks.com/matlabcentral/fileexchange/}.
+
+\bibitem{Wettl04}
+Ferenc Wettl\bibAnd 0Gyula Mayer\bibAnd 2Péter Szabó:
+\bibNewBlock {\em \LaTeX~kézikönyv}.
+\bibNewBlock 2004, Panem Könyvkiadó.
+
+\end{thebibliography}

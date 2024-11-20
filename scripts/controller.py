@@ -23,9 +23,9 @@ L = 2.9  # Wheel base of the vehicle [m]
 max_steer = np.deg2rad(25.0)  # maximum steering angle[rad]
 
 lqr_Q[0, 0] = 0.1
-lqr_Q[1, 1] = 0.01
+lqr_Q[1, 1] = 0.0
 lqr_Q[2, 2] = 0.1
-lqr_Q[3, 3] = 0.01
+lqr_Q[3, 3] = 0.0
 lqr_Q[4, 4] = 0.6
 
 lqr_R[0, 0] = 15.0
@@ -163,7 +163,7 @@ def dlqr(A, B, Q, R):
 
 
 
-def lqr_speed_steering_control(state, cx, cy, cyaw, ck, pe, pth_e,jerk_factor, sp, Q, R):
+def lqr_speed_steering_control(state, cx, cy, cyaw, ck, pe, pth_e,lateral_acceleration, sp, Q, R):
     ind, e = calc_nearest_index(state, cx, cy, cyaw)
 
     tv = sp[ind]
@@ -207,7 +207,7 @@ def lqr_speed_steering_control(state, cx, cy, cyaw, ck, pe, pth_e,jerk_factor, s
     x[0, 0] = e
     x[1, 0] = 0
     x[2, 0] = th_e
-    x[3, 0] = (th_e - pth_e) / dt
+    x[3, 0] = 0 #(th_e - pth_e) / dt
     x[4, 0] = v - tv
 
     # input vector
@@ -256,7 +256,7 @@ def calc_nearest_index(state, cx, cy, cyaw):
 
 def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
     T = 500.0  # max simulation time
-    goal_dis = 3.0
+    goal_dis = 8.0
     stop_speed = 0.05
 
     state = State(x=-0.0, y=-0.0, yaw=0.0, v=0.0)
@@ -271,7 +271,7 @@ def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
     acell = [0.0]
     errror_history = [0.0]
     jerk_history = [0.0]
-    lateral_acceleration = 0.0
+    lateral_acceleration_history = [0.0]
     prev_lat_acc = 0.0
     dl = 0.0
 
@@ -284,10 +284,11 @@ def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
         jerk_factor = (lateral_acceleration - prev_lat_acc) / dt
 
         dl, target_ind, e, e_th, ai = lqr_speed_steering_control(
-            state, cx, cy, cyaw, ck, e, e_th, jerk_factor, speed_profile, lqr_Q, lqr_R)
+            state, cx, cy, cyaw, ck, e, e_th, lateral_acceleration, speed_profile, lqr_Q, lqr_R)
         
         
         prev_lat_acc = lateral_acceleration
+
 
         state = update(state, ai, dl)
 
@@ -313,6 +314,7 @@ def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
         acell.append(ai)
         errror_history.append(e)
         jerk_history.append(jerk_factor)
+        lateral_acceleration_history.append(lateral_acceleration)
 
         if target_ind % 1 == 0 and show_animation:
             plt.cla()
@@ -329,7 +331,7 @@ def do_simulation(cx, cy, cyaw, ck, speed_profile, goal):
                       + ",target index:" + str(target_ind))
             plt.pause(0.0001)
 
-    return t, x, y, yaw, v, delta, acell, errror_history, jerk_history
+    return t, x, y, yaw, v, delta, acell, errror_history, jerk_history, lateral_acceleration_history
 
 
 def calc_speed_profile(cyaw, target_speed):
@@ -365,7 +367,7 @@ def calc_speed_profile(cyaw, target_speed):
 def main():
     print("LQR steering control tracking start!!")
     ax = [0.0, 20.0, 40.0,  60.0, 120.0, 180.0, 280.0, 320.0, 340.0, 380.0, 400.0]
-    ay = [0.0, 0.0, 25.0, 30.0, 40.0, 50.0, 60.0, 70.0, 150.0, 160.0, 180.0]
+    ay = [0.0, 0.0, 10.0, 30.0, 40.0, 50.0, 60.0, 70.0, 150.0, 160.0, 180.0]
 
 
 
@@ -375,12 +377,12 @@ def main():
 
     cx, cy, cyaw, ck, s = cubic_spline_planner.calc_spline_course(
         ax, ay, ds=0.1)
-    target_speed = 50.0 / 3.6  # simulation parameter km/h -> m/s
+    target_speed = 90.0 / 3.6  # simulation parameter km/h -> m/s
 
 
     sp = calc_speed_profile(cyaw, target_speed)
 
-    t, x, y, yaw, v, delta, acell, error_history,jerk_history = do_simulation(cx, cy, cyaw, ck, sp, goal)
+    t, x, y, yaw, v, delta, acell, error_history,jerk_history, lateral_acc_history = do_simulation(cx, cy, cyaw, ck, sp, goal)
 
     if show_animation:  # pragma: no cover
         plt.close()
@@ -442,6 +444,16 @@ def main():
         plt.legend()
         plt.xlabel("Time [sec]")
         plt.ylabel("Jerk [m/s^3]")
+
+        plt.subplots(1)
+        plt.plot(t, np.array(lateral_acc_history), "-r", label="Lateral Acc")
+        plt.grid(True)
+        plt.legend()
+        plt.xlabel("Time [sec]")
+        plt.ylabel("Lateral Acc [m/s^2]")
+
+        
+
 
         plt.show()
 
